@@ -49,6 +49,12 @@ jobs:
     outputs:
       clean: ${{ steps.changes.outputs.clean }}
       files: ${{ steps.changes.outputs.files }}
+      vendor_path: ${{ steps.vars.outputs.vendor_path }}
+      config_file: ${{ steps.vars.outputs.config_file }}
+      git_author_name: ${{ steps.vars.outputs.git_author_name }}
+      git_author_email: ${{ steps.vars.outputs.git_author_email }}
+      git_committer_name: ${{ steps.vars.outputs.git_committer_name }}
+      git_committer_email: ${{ steps.vars.outputs.git_committer_email }}
 
     steps:
 
@@ -56,9 +62,6 @@ jobs:
       id: vars
       shell: bash
       run: |
-        echo "VENDOR_PATH=${VENDOR_PATH/#\~/$HOME}" >> $GITHUB_ENV # expand tilde
-        echo "LUACHECK_CONFIG=${LUACHECK_CONFIG/#\~/$HOME}" >> $GITHUB_ENV # expand tilde
-
         # set defaults for missing variables
         if [[ -z "${{ inputs.paths }}" ]]; then
           var='script'
@@ -244,8 +247,8 @@ jobs:
     - name: Commit files
       id: commit
       run: |
-        git config --local user.email ${{ steps.vars.outputs.git_author_email }}
-        git config --local user.name ${{ steps.vars.outputs.git_author_name }}
+        git config --local user.email ${{ needs.lint.outputs.git_author_email }}
+        git config --local user.name ${{ needs.lint.outputs.git_author_name }}
         git add ${{ needs.lint.outputs.files }}
         git commit -m "Update config and autocomplete"
 
@@ -256,12 +259,12 @@ jobs:
         token: ${{ secrets.token }}
         committer: "${{ format(
           '{0} <{1}>',
-          steps.vars.outputs.git_committer_name,
-          steps.vars.outputs.git_committer_email ) }}"
+          needs.lint.outputs.git_committer_name,
+          needs.lint.outputs.git_committer_email ) }}"
         author: "${{ format(
           '{0} <{1}>',
-          steps.vars.outputs.git_author_name,
-          steps.vars.outputs.git_author_email ) }}"
+          needs.lint.outputs.git_author_name,
+          needs.lint.outputs.git_author_email ) }}"
         branch: bot/lua-globals-patch
         delete-branch: true
         signoff: false
