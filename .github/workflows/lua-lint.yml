@@ -1,0 +1,291 @@
+name: Lua lint
+
+on: 
+  workflow_call:
+    inputs:
+      paths:
+        required: false
+        type: string
+      config_file:
+        required: false
+        type: string
+      custom_lua_globals:
+        required: false
+        type: string
+      vendor_path:
+        required: false
+        type: string
+      pr_enabled:
+        required: false
+        type: boolean
+      automerge_enabled:
+        required: false
+        type: boolean
+      git_author_name:
+        required: false
+        type: string
+      git_author_email:
+        required: false
+        type: string
+      git_committer_name:
+        required: false
+        type: string
+      git_committer_email:
+        required: false
+        type: string
+    secrets:
+      token:
+        required: true
+
+env:
+  WORKFLOW_REPO: Warhammer-Mods/workflows
+  LUA_VERSION: "5.1"
+  LUAROCKS_VERSION: "3.7.0"    
+  PROBLEM_MATCHER: .github/luacheck-plain.json
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    outputs:
+      clean: ${{ steps.changes.outputs.clean }}
+      files: ${{ steps.changes.outputs.files }}
+
+    steps:
+
+    - name: Set variables
+      id: vars
+      shell: bash
+      run: |
+        echo "VENDOR_PATH=${VENDOR_PATH/#\~/$HOME}" >> $GITHUB_ENV # expand tilde
+        echo "LUACHECK_CONFIG=${LUACHECK_CONFIG/#\~/$HOME}" >> $GITHUB_ENV # expand tilde
+
+        # set defaults for missing variables
+        if [[ -z "${{ inputs.paths }}" ]]; then
+          var='script'
+          echo "::set-output name=paths::${var}"
+        else
+          echo "::set-output name=paths::${{ inputs.paths }}"
+        fi
+
+        if [[ -z "${{ inputs.config_file }}" ]]; then
+          var='.luacheckrc'
+          echo "::set-output name=config_file::${var}"
+        else
+          echo "::set-output name=config_file::${{ inputs.config_file }}"
+        fi
+
+        if [[ -z "${{ inputs.git_author_name }}" ]]; then
+          var='github-actions[bot]'
+          echo "::set-output name=git_author_name::${var}"
+        else
+          echo "::set-output name=git_author_name::${{ inputs.git_author_name }}"
+        fi
+
+        if [[ -z "${{ inputs.git_author_email }}" ]]; then
+          var='41898282+github-actions[bot]@users.noreply.github.com'
+          echo "::set-output name=git_author_email::${var}"
+        else
+          echo "::set-output name=git_author_email::${{ inputs.git_author_email }}"
+        fi
+
+        if [[ -z "${{ inputs.git_committer_name }}" ]]; then
+          if [[ -z "${{ inputs.git_author_name }}" ]]; then
+            var='github-actions[bot]'
+            echo "::set-output name=git_committer_name::${var}"
+          else
+            echo "::set-output name=git_committer_name::${{ inputs.git_author_name }}"
+          fi
+        else
+          echo "::set-output name=git_committer_name::${{ inputs.git_committer_name }}"
+        fi
+
+        if [[ -z "${{ inputs.git_committer_email }}" ]]; then
+          if [[ -z "${{ inputs.git_author_email }}" ]]; then
+            var='41898282+github-actions[bot]@users.noreply.github.com'
+            echo "::set-output name=git_committer_email::${var}"
+          else
+            echo "::set-output name=git_committer_email::${{ inputs.git_author_email }}"
+          fi
+        else
+          echo "::set-output name=git_committer_email::${{ inputs.git_committer_email }}"
+        fi
+
+        if [[ -z "${{ inputs.vendor_path }}" ]]; then
+          var=".luarocks"
+          echo "::set-output name=vendor_path::${var}"
+        else
+          echo "::set-output name=vendor_path::${{ inputs.vendor_path }}"
+        fi
+
+    - uses: actions/checkout@v2
+
+    - uses: leafo/gh-actions-lua@v8.0.0
+      with:
+        luaVersion: ${{ env.LUA_VERSION }}
+        
+    - uses: leafo/gh-actions-luarocks@v4.1.0
+      with:
+        luarocksVersion: ${{ env.LUAROCKS_VERSION }}
+        
+    - name: Install luacheck
+      run: luarocks install luacheck
+
+    - uses: actions/cache@v2
+      with:
+        path: ${{ inputs.vendor_path }}
+        key: "${{ runner.os }}-luarocks_vendor_${{ hashFiles('**/*.rockspec') }}"
+
+    - name: Install
+      run: |
+        luarocks install --tree ${{ env.VENDOR_PATH }} --only-deps *.rockspec
+
+        lr_path=$(luarocks path --tree ${{ inputs.vendor_path }} --lr-path )
+        echo "LUA_PATH=${lr_path/;/:}:${LUA_PATH}" >> $GITHUB_ENV
+
+        lr_cpath=$(luarocks path --tree ${{ inputs.vendor_path }} --lr-cpath)
+        echo "LUA_CPATH=${lr_cpath/;/:}:${LUA_CPATH}" >> $GITHUB_ENV
+
+        lr_bin=$(luarocks path --tree ${{ inputs.vendor_path }} --lr-bin)
+        echo "${lr_bin/;/:}" >> $GITHUB_PATH
+
+    - name: Update lua globals
+      env:
+        PATHS: ${{ steps.vars.outputs.paths }}
+        CONFIG_FILE: ${{ steps.vars.outputs.config_file }}
+        CUSTOM_LUA_GLOBALS: ${{ inputs.custom_lua_globals }}
+      run: |
+        script="update_lua_globals.sh"
+
+        curl -sL --fail \
+          -o ${script} \
+          "${GITHUB_SERVER_URL}/${{ env.WORKFLOW_REPO }}/raw/main/bin/${script}"
+
+        chmod +x ${script}
+        ./${script}
+        rm -f ${script}
+
+    - name: Get file changes
+      id: changes
+      run: |
+        changes=$(git ls-files \
+          --modified \
+          --others \
+          --exclude-standard \
+          ${{ steps.vars.outputs.config_file }}
+        )
+        echo "::debug::${changes}"
+
+        if [ -z "${changes}" ]; then
+          echo "::set-output name=clean::true"
+        else
+          files=()
+          echo "::group::Files changed"
+          while IFS= read -r line; do
+            files+=("${line}")
+            echo "::notice file=${file}::File changed: ${line}"
+            echo "::debug::$(git diff ${file})"
+          done <<< ${changes}
+          echo "::endgroup::"
+          echo "::set-output name=files::${files[@]}"
+          echo "::set-output name=clean::false"
+        fi
+
+    - name: Luacheck Lint
+      id: luacheck
+      shell: bash --noprofile --norc {0}
+      env:
+        matcher: ${{ env.PROBLEM_MATCHER }}
+      run: |
+        curl -sL --fail \
+          -o ${matcher} \
+          "${GITHUB_SERVER_URL}/${{ env.WORKFLOW_REPO }}/raw/main/${matcher}"
+
+        echo "::add-matcher::${matcher}"
+        luacheck *.rockspec ${{ steps.vars.outputs.paths }} \
+          --formatter plain \
+          --codes --ranges
+        exitcode=$?
+        
+        echo "::remove-matcher owner=luacheck-plain_error::"
+        echo "::remove-matcher owner=luacheck-plain_warning::"
+
+        rm -fv ${matcher}
+
+        if [ "$exitcode" -gt 1 ]; then
+          exit $exitcode
+        else
+          exit 0
+        fi
+
+    - name: Upload updated files
+      if: steps.changes.outputs.clean == 'false'
+      uses: actions/upload-artifact@v2
+      with:
+        name: luacheckrc
+        path: ${{ steps.changes.outputs.files }}
+
+  create-pr:
+    runs-on: ubuntu-latest
+    needs: lint
+    if: needs.lint.outputs.clean == 'false' && inputs.pr_enabled == true
+
+    steps:
+
+    - uses: actions/checkout@v2
+      with:
+        persist-credentials: false
+        fetch-depth: 0
+
+    - name: Download updated files
+      uses: actions/download-artifact@v2
+      with:
+        name: luacheckrc
+
+    - name: Commit files
+      id: commit
+      run: |
+        git config --local user.email ${{ steps.vars.outputs.git_author_email }}
+        git config --local user.name ${{ steps.vars.outputs.git_author_name }}
+        git add ${{ needs.lint.outputs.files }}
+        git commit -m "Update config and autocomplete"
+
+    - name: Create a PR
+      id: pr
+      uses: peter-evans/create-pull-request@v3
+      with:
+        token: ${{ secrets.token }}
+        committer: "${{ format(
+          '{0} <{1}>',
+          steps.vars.outputs.git_committer_name,
+          steps.vars.outputs.git_committer_email ) }}"
+        author: "${{ format(
+          '{0} <{1}>',
+          steps.vars.outputs.git_author_name,
+          steps.vars.outputs.git_author_email ) }}"
+        branch: bot/lua-globals-patch
+        delete-branch: true
+        signoff: false
+        title: "[Luacheck] Update config"
+        body: |
+          **Update**:
+            - Luacheck globals list
+        labels: |
+          automation
+          lua
+
+    - name: Show info
+      run: |
+        echo "::notice::${{ format(
+          'Pull request #{0} is {1}: {2}',
+          steps.pr.outputs.pull-request-number,
+          steps.pr.outputs.pull-request-operation,
+          steps.pr.outputs.pull-request-url
+        ) }}"
+
+    - name: Enable Pull Request Automerge
+      if: steps.pr.outputs.pull-request-operation == 'created' && inputs.automerge_enabled == true
+      uses: peter-evans/enable-pull-request-automerge@v1
+      with:
+        token: ${{ secrets.token }}
+        pull-request-number: ${{ steps.pr.outputs.pull-request-number }}
+        merge-method: squash
