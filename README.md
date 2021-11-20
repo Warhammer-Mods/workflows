@@ -1,2 +1,3 @@
-# workflows
-GitHub Workflows used throughout the repositories
+# GitHub Workflows
+
+GitHub Workflows used throughout the repositories.
