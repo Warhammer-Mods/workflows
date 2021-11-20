@@ -43,6 +43,16 @@ jobs:
 
   db-check:
     runs-on: ubuntu-latest
+    outputs:
+      clean: ${{ steps.changes.outputs.clean }}
+      changed_files: ${{ steps.changes.outputs.files }}
+      paths: ${{ steps.vars.outputs.paths }}
+      csvlint_params: ${{ steps.vars.outputs.csvlint_params }}
+      git_author_name: ${{ steps.vars.outputs.git_author_name }}
+      git_author_email: ${{ steps.vars.outputs.git_author_email }}
+      git_committer_name: ${{ steps.vars.outputs.git_committer_name }}
+      git_committer_email: ${{ steps.vars.outputs.git_committer_email }}
+      vscode_workspace_file: ${{ steps.vars.outputs.vscode_workspace_file }}
 
     steps:
 
@@ -278,9 +288,9 @@ jobs:
     - name: Commit files
       id: commit
       run: |
-        git config --local user.email ${{ steps.vars.outputs.git_author_email }}
-        git config --local user.name ${{ steps.vars.outputs.git_author_name }}
-        git add ${{ steps.vars.outputs.paths }}
+        git config --local user.email ${{ needs.db-check.outputs.git_author_email }}
+        git config --local user.name ${{ needs.db-check.outputs.git_author_name }}
+        git add ${{ needs.db-check.outputs.changed_files }}
         git commit -m "Fix DBs"
 
     - name: Create a PR
@@ -290,12 +300,12 @@ jobs:
         token: ${{ secrets.token }}
         committer: "${{ format(
           '{0} <{1}>',
-          steps.vars.outputs.git_committer_name,
-          steps.vars.outputs.git_committer_email ) }}"
+          needs.db-check.outputs.git_committer_name,
+          needs.db-check.outputs.git_committer_email ) }}"
         author: "${{ format(
           '{0} <{1}>',
-          steps.vars.outputs.git_author_name,
-          steps.vars.outputs.git_author_email ) }}"
+          needs.db-check.outputs.git_author_name,
+          needs.db-check.outputs.git_author_email ) }}"
         branch: bot/tsv-patch
         delete-branch: true
         signoff: false
@@ -307,7 +317,7 @@ jobs:
           ---
 
           Keep getting these PRs?  
-          Make sure you open your project using [VSCode workspace file](../tree/master/${{ steps.vars.outputs.vscode_workspace_file}}).
+          Make sure you open your project using [VSCode workspace file](../tree/master/${{ needs.db-check.outputs.vscode_workspace_file}}).
           You can also check out this [article](https://docs.github.com/en/get-started/getting-started-with-git/configuring-git-to-handle-line-endings).
         labels: |
           automation
