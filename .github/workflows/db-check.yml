@@ -36,6 +36,7 @@ on:
 
 env:
   CSVLINT_PATH: ~/csvlint
+  PROBLEM_MATCHER: .github/csvlint.json
   WORKFLOW_REPO: Warhammer-Mods/workflows
 
 jobs:
@@ -187,6 +188,8 @@ jobs:
     - name: Check TSV syntax
       id: check_syntax
       shell: bash --noprofile --norc {0}
+      env:
+        matcher: ${{ env.PROBLEM_MATCHER }}
       run: |
         checkTSV () {
           echo "File: $@"
@@ -198,11 +201,12 @@ jobs:
         export -f checkTSV
 
         curl -sL --fail \
-          -o .github/csvlint.json \
-          "${GITHUB_SERVER_URL}/${{ env.WORKFLOW_REPO }}/raw/main/.github/csvlint.json"
+          -o ${matcher} \
+          "${GITHUB_SERVER_URL}/${{ env.WORKFLOW_REPO }}/raw/main/${matcher}"
 
         exit_code=0
-        echo "::add-matcher::.github/csvlint.json"
+
+        echo "::add-matcher::${matcher}"
         for path in "${{ steps.vars.outputs.paths }}"; do
           if [[ -d ${path} ]]; then
             find ${path} -type f -iname "*.tsv" -print0 | xargs -0 -I {} bash -c 'checkTSV "$@"' _ {}
@@ -214,9 +218,11 @@ jobs:
             (( last_exit_code > exit_code )) && exit_code=${last_exit_code}
           fi
         done
+
         echo "::remove-matcher owner=csvlint_error::"
         echo "::remove-matcher owner=csvlint_warning::"
-        
+        rm -fv ${matcher}
+
         echo "::debug::Exiting with code: ${exit_code}"
         exit ${exit_code}
 
