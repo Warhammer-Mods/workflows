@@ -36,6 +36,7 @@ on:
 
 env:
   CSVLINT_PATH: ~/csvlint
+  WORKFLOW_REPO: Warhammer-Mods/workflows
 
 jobs:
 
@@ -93,7 +94,7 @@ jobs:
         fi
 
         if [[ -z "${{ inputs.csvlint_params }}" ]]; then
-          var=''
+          var="--lazyquotes --delimiter='\\\t'"
           echo "::set-output name=csvlint_params::${var}"
         else
           echo "::set-output name=csvlint_params::${{ inputs.csvlint_params }}"
@@ -194,6 +195,10 @@ jobs:
         }
         export -f checkTSV
 
+        curl -sL --fail \
+          "${GITHUB_SERVER_URL}/${{ env.WORKFLOW_REPO }}/raw/main/.github/csvlint.json" \
+        > .github/csvlint.json
+
         exit_code=0
         echo "::add-matcher::.github/csvlint.json"
         for path in "${{ steps.vars.outputs.paths }}"; do
@@ -290,7 +295,7 @@ jobs:
         body: |
           **Fixes**:
             - Line ending normalization (`CRLF` → `LF`)
-          
+
           ---
 
           Keep getting these PRs?  
