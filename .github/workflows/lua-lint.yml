@@ -137,7 +137,7 @@ jobs:
 
     - name: Install
       run: |
-        luarocks install --tree ${{ env.VENDOR_PATH }} --only-deps *.rockspec
+        luarocks install --tree ${{ inputs.vendor_path }} --only-deps *.rockspec
 
         lr_path=$(luarocks path --tree ${{ inputs.vendor_path }} --lr-path )
         echo "LUA_PATH=${lr_path/;/:}:${LUA_PATH}" >> $GITHUB_ENV
