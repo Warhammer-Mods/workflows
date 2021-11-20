@@ -79,6 +79,7 @@ jobs:
             echo "::set-output name=git_committer_name::${var}"
           else
             echo "::set-output name=git_committer_name::${{ inputs.git_author_name }}"
+          fi
         else
           echo "::set-output name=git_committer_name::${{ inputs.git_committer_name }}"
         fi
@@ -89,6 +90,7 @@ jobs:
             echo "::set-output name=git_committer_email::${var}"
           else
             echo "::set-output name=git_committer_email::${{ inputs.git_author_email }}"
+          fi
         else
           echo "::set-output name=git_committer_email::${{ inputs.git_committer_email }}"
         fi
