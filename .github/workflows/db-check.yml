@@ -198,8 +198,8 @@ jobs:
         export -f checkTSV
 
         curl -sL --fail \
-          "${GITHUB_SERVER_URL}/${{ env.WORKFLOW_REPO }}/raw/main/.github/csvlint.json" \
-        > .github/csvlint.json
+          -o .github/csvlint.json \
+          "${GITHUB_SERVER_URL}/${{ env.WORKFLOW_REPO }}/raw/main/.github/csvlint.json"
 
         exit_code=0
         echo "::add-matcher::.github/csvlint.json"
