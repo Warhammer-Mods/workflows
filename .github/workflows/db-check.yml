@@ -46,6 +46,8 @@ jobs:
 
     steps:
 
+    - uses: actions/checkout@v2
+
     - name: Set variables
       id: vars
       shell: bash
@@ -104,13 +106,11 @@ jobs:
         fi
 
         if [[ -z "${{ inputs.vscode_workspace_file }}" ]]; then
-          var='mod.code-workspace'
+          var=$(find . -type f -iname "*.code-workspace" -print | cut -d/ -f2- | head -n 1)
           echo "::set-output name=vscode_workspace_file::${var}"
         else
           echo "::set-output name=vscode_workspace_file::${{ inputs.vscode_workspace_file }}"
         fi
-
-    - uses: actions/checkout@v2
 
     - name: Cache dos2unix
       id: cache-dos2unix
