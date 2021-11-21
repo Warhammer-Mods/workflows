@@ -109,7 +109,7 @@ jobs:
         fi
 
         if [[ -z "${{ inputs.csvlint_params }}" ]]; then
-          var="--lazyquotes --delimiter='\\\t'"
+          var="--lazyquotes --delimiter='\\t'"
           echo "::set-output name=csvlint_params::${var}"
         else
           echo "::set-output name=csvlint_params::${{ inputs.csvlint_params }}"
