@@ -155,7 +155,7 @@ jobs:
 
     - uses: actions/cache@v2
       with:
-        path: ${{ inputs.vendor_path }}
+        path: ${{ steps.vars.outputs.vendor_path }}
         key: "${{ runner.os }}-luarocks_vendor_${{ hashFiles('**/*.rockspec') }}"
 
     - name: Install
