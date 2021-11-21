@@ -242,7 +242,7 @@ jobs:
         fi
 
     - name: Upload updated files
-      if: steps.changes.outputs.clean == 'false'
+      if: steps.changes.outputs.clean == 'false' && inputs.pr_enabled == true
       uses: actions/upload-artifact@v2
       with:
         name: luacheckrc
