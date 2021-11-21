@@ -15,6 +15,12 @@ on:
       vendor_path:
         required: false
         type: string
+      lua_version:
+        required: false
+        type: string
+      luarocks_version:
+        required: false
+        type: string
       pr_enabled:
         required: false
         type: boolean
@@ -39,8 +45,6 @@ on:
 
 env:
   WORKFLOW_REPO: Warhammer-Mods/workflows
-  LUA_VERSION: "5.1"
-  LUAROCKS_VERSION: "3.7.0"    
   PROBLEM_MATCHER: .github/luacheck-plain.json
 
 jobs:
@@ -51,6 +55,8 @@ jobs:
       files: ${{ steps.changes.outputs.files }}
       vendor_path: ${{ steps.vars.outputs.vendor_path }}
       config_file: ${{ steps.vars.outputs.config_file }}
+      lua_version: ${{ steps.vars.outputs.lua_version }}
+      luarocks_version: ${{ steps.vars.outputs.luarocks_version }}
       git_author_name: ${{ steps.vars.outputs.git_author_name }}
       git_author_email: ${{ steps.vars.outputs.git_author_email }}
       git_committer_name: ${{ steps.vars.outputs.git_committer_name }}
@@ -75,6 +81,20 @@ jobs:
           echo "::set-output name=config_file::${var}"
         else
           echo "::set-output name=config_file::${{ inputs.config_file }}"
+        fi
+
+        if [[ -z "${{ inputs.lua_version }}" ]]; then
+          var='5.1'
+          echo "::set-output name=lua_version::${var}"
+        else
+          echo "::set-output name=lua_version::${{ inputs.lua_version }}"
+        fi
+
+        if [[ -z "${{ inputs.luarocks_version }}" ]]; then
+          var='3.8.0'
+          echo "::set-output name=luarocks_version::${var}"
+        else
+          echo "::set-output name=luarocks_version::${{ inputs.luarocks_version }}"
         fi
 
         if [[ -z "${{ inputs.git_author_name }}" ]]; then
@@ -124,11 +144,11 @@ jobs:
 
     - uses: leafo/gh-actions-lua@v8.0.0
       with:
-        luaVersion: ${{ env.LUA_VERSION }}
+        luaVersion: ${{ steps.vars.outputs.lua_version }}
         
     - uses: leafo/gh-actions-luarocks@v4.1.0
       with:
-        luarocksVersion: ${{ env.LUAROCKS_VERSION }}
+        luarocksVersion: ${{ steps.vars.outputs.luarocks_version }}
         
     - name: Install luacheck
       run: luarocks install luacheck
@@ -155,6 +175,7 @@ jobs:
       env:
         PATHS: ${{ steps.vars.outputs.paths }}
         CONFIG_FILE: ${{ steps.vars.outputs.config_file }}
+        LUA_VERSION: ${{ steps.vars.outputs.lua_version }}
         CUSTOM_LUA_GLOBALS: ${{ inputs.custom_lua_globals }}
       run: |
         script="update_lua_globals.sh"
