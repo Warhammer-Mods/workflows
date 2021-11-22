@@ -263,7 +263,7 @@ jobs:
         fi
 
     - name: Upload DBs
-      if: steps.changes.outputs.clean == 'false'
+      if: steps.changes.outputs.clean == 'false' && inputs.pr_enabled == true
       uses: actions/upload-artifact@v2
       with:
         name: fixed-dbs
@@ -298,14 +298,18 @@ jobs:
       uses: peter-evans/create-pull-request@v3
       with:
         token: ${{ secrets.token }}
-        committer: "${{ format(
+        committer: >-
+          ${{ format(
           '{0} <{1}>',
           needs.db-check.outputs.git_committer_name,
-          needs.db-check.outputs.git_committer_email ) }}"
-        author: "${{ format(
+          needs.db-check.outputs.git_committer_email
+          ) }}
+        author: >-
+          ${{ format(
           '{0} <{1}>',
           needs.db-check.outputs.git_author_name,
-          needs.db-check.outputs.git_author_email ) }}"
+          needs.db-check.outputs.git_author_email
+          ) }}
         branch: bot/tsv-patch
         delete-branch: true
         signoff: false
