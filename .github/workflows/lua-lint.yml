@@ -153,6 +153,22 @@ jobs:
     - name: Install luacheck
       run: luarocks install luacheck
 
+    - name: Check if rockspec file is present
+      id: rockspec
+      run: |
+        rockspec=$(
+          find . -type f -iname "*.rockspec" \
+          | head -n 1 \
+          | cut -d/ -f2-
+        )
+
+        if [[ -s "${rockspec}" ]]; then
+          echo "::set-output name=file_path::${rockspec}"
+          echo "::set-output name=is_present::true"
+        else
+          echo "::set-output name=is_present::false"
+        fi
+
     - uses: actions/cache@v2
       with:
         path: ${{ steps.vars.outputs.vendor_path }}
@@ -160,7 +176,11 @@ jobs:
 
     - name: Install
       run: |
-        luarocks install --tree ${{ steps.vars.outputs.vendor_path }} --only-deps *.rockspec
+        luarocks install --tree ${{ steps.vars.outputs.vendor_path }} lua-globals
+
+        if [[ "${{ steps.rockspec.outputs.is_present }}" == "true" ]]; then
+          luarocks install --tree ${{ steps.vars.outputs.vendor_path }} --only-deps ${{ steps.rockspec.outputs.file_path }}
+        fi
 
         lr_path=$(luarocks path --tree ${{ steps.vars.outputs.vendor_path }} --lr-path )
         echo "LUA_PATH=${lr_path/;/:}:${LUA_PATH}" >> $GITHUB_ENV
