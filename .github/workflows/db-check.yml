@@ -56,7 +56,7 @@ jobs:
 
     steps:
 
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
 
     - name: Set variables
       id: vars
@@ -275,7 +275,7 @@ jobs:
     if: needs.db-check.outputs.clean == 'false' && inputs.pr_enabled == true
 
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
       with:
         persist-credentials: false
         fetch-depth: 0
