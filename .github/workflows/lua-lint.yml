@@ -140,7 +140,7 @@ jobs:
           echo "::set-output name=vendor_path::${{ inputs.vendor_path }}"
         fi
 
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
 
     - uses: leafo/gh-actions-lua@v8.0.0
       with:
@@ -275,7 +275,7 @@ jobs:
 
     steps:
 
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
       with:
         persist-credentials: false
         fetch-depth: 0
