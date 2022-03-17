@@ -146,7 +146,7 @@ jobs:
       with:
         luaVersion: ${{ steps.vars.outputs.lua_version }}
         
-    - uses: leafo/gh-actions-luarocks@v4.1.0
+    - uses: leafo/gh-actions-luarocks@v4.2.0
       with:
         luarocksVersion: ${{ steps.vars.outputs.luarocks_version }}
         
