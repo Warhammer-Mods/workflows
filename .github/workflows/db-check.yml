@@ -124,7 +124,7 @@ jobs:
 
     - name: Cache dos2unix
       id: cache-dos2unix
-      uses: actions/cache@v2
+      uses: actions/cache@v3
       with:
         key: ${{ runner.os }}-dos2unix-cache
         path: "~/dos2unix"
@@ -178,7 +178,7 @@ jobs:
 
     - name: Cache cvslint
       id: csvlint-cache
-      uses: actions/cache@v2
+      uses: actions/cache@v3
       with:
         key: "${{ runner.os }}-csvlint@${{ steps.csvlint-info.outputs.latest-version }}"
         path: ${{ env.CSVLINT_PATH }}
