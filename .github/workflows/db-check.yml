@@ -264,7 +264,7 @@ jobs:
 
     - name: Upload DBs
       if: steps.changes.outputs.clean == 'false' && inputs.pr_enabled == true
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v3
       with:
         name: fixed-dbs
         path: ${{ steps.changes.outputs.files }}
