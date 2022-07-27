@@ -162,7 +162,7 @@ jobs:
         fi
 
     - uses: actions/cache@v3
-      if: steps.rockspec.outputs.is_present == "true"
+      if: steps.rockspec.outputs.is_present == 'true'
       with:
         path: ${{ steps.vars.outputs.vendor_path }}
         key: "${{ runner.os }}-luarocks_vendor_${{ hashFiles('**/*.rockspec') }}"
