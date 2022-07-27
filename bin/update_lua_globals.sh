@@ -7,9 +7,7 @@ PATHS=${PATHS:-'script'}
 LUA_VENDOR_FILES=${VENDOR_PATH:-'.luarocks'}
 
 if [[ -z "${LUA_VERSION}" ]]; then
-  LUA_VERSION=51
-else
-  LUA_VERSION=$(echo "${LUA_VERSION}" | tr -dc '0-9')
+  LUA_VERSION=5.1
 fi
 
 CUSTOM_VARS=()
