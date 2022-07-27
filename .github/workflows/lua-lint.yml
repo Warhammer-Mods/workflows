@@ -45,7 +45,8 @@ on:
 
 env:
   WORKFLOW_REPO: Warhammer-Mods/workflows
-  PROBLEM_MATCHER: .github/luacheck-plain.json
+  WORKFLOW_TAG: v1
+  PROBLEM_MATCHER: luacheck-plain.json
 
 jobs:
   setup-and-lint:
@@ -70,51 +71,44 @@ jobs:
       run: |
         # set defaults for missing variables
         if [[ -z "${{ inputs.paths }}" ]]; then
-          var='script'
-          echo "::set-output name=paths::${var}"
+          echo "::set-output name=paths::script"
         else
           echo "::set-output name=paths::${{ inputs.paths }}"
         fi
 
         if [[ -z "${{ inputs.config_file }}" ]]; then
-          var='.luacheckrc'
-          echo "::set-output name=config_file::${var}"
+          echo "::set-output name=config_file::.luacheckrc"
         else
           echo "::set-output name=config_file::${{ inputs.config_file }}"
         fi
 
         if [[ -z "${{ inputs.lua_version }}" ]]; then
-          var='5.1'
-          echo "::set-output name=lua_version::${var}"
+          echo "::set-output name=lua_version::5.1"
         else
           echo "::set-output name=lua_version::${{ inputs.lua_version }}"
         fi
 
         if [[ -z "${{ inputs.luarocks_version }}" ]]; then
-          var='3.8.0'
-          echo "::set-output name=luarocks_version::${var}"
+          echo "::set-output name=luarocks_version::3.9.1"
         else
           echo "::set-output name=luarocks_version::${{ inputs.luarocks_version }}"
         fi
 
         if [[ -z "${{ inputs.git_author_name }}" ]]; then
-          var='github-actions[bot]'
-          echo "::set-output name=git_author_name::${var}"
+          echo "::set-output name=git_author_name::github-actions[bot]"
         else
           echo "::set-output name=git_author_name::${{ inputs.git_author_name }}"
         fi
 
         if [[ -z "${{ inputs.git_author_email }}" ]]; then
-          var='41898282+github-actions[bot]@users.noreply.github.com'
-          echo "::set-output name=git_author_email::${var}"
+          echo "::set-output name=git_author_email::41898282+github-actions[bot]@users.noreply.github.com"
         else
           echo "::set-output name=git_author_email::${{ inputs.git_author_email }}"
         fi
 
         if [[ -z "${{ inputs.git_committer_name }}" ]]; then
           if [[ -z "${{ inputs.git_author_name }}" ]]; then
-            var='github-actions[bot]'
-            echo "::set-output name=git_committer_name::${var}"
+            echo "::set-output name=git_committer_name::github-actions[bot]"
           else
             echo "::set-output name=git_committer_name::${{ inputs.git_author_name }}"
           fi
@@ -124,8 +118,7 @@ jobs:
 
         if [[ -z "${{ inputs.git_committer_email }}" ]]; then
           if [[ -z "${{ inputs.git_author_email }}" ]]; then
-            var='41898282+github-actions[bot]@users.noreply.github.com'
-            echo "::set-output name=git_committer_email::${var}"
+            echo "::set-output name=git_committer_email::41898282+github-actions[bot]@users.noreply.github.com"
           else
             echo "::set-output name=git_committer_email::${{ inputs.git_author_email }}"
           fi
@@ -134,8 +127,7 @@ jobs:
         fi
 
         if [[ -z "${{ inputs.vendor_path }}" ]]; then
-          var=".luarocks"
-          echo "::set-output name=vendor_path::${var}"
+          echo "::set-output name=vendor_path::.luarocks"
         else
           echo "::set-output name=vendor_path::${{ inputs.vendor_path }}"
         fi
@@ -170,6 +162,7 @@ jobs:
         fi
 
     - uses: actions/cache@v3
+      if: steps.rockspec.outputs.is_present == "true"
       with:
         path: ${{ steps.vars.outputs.vendor_path }}
         key: "${{ runner.os }}-luarocks_vendor_${{ hashFiles('**/*.rockspec') }}"
@@ -202,7 +195,7 @@ jobs:
 
         curl -sL --fail \
           -o ${script} \
-          "${GITHUB_SERVER_URL}/${{ env.WORKFLOW_REPO }}/raw/main/bin/${script}"
+          "${GITHUB_SERVER_URL}/${{ env.WORKFLOW_REPO }}/raw/${{ env.WORKFLOW_TAG }}/bin/${script}"
 
         chmod +x ${script}
         ./${script}
@@ -237,15 +230,13 @@ jobs:
     - name: Luacheck Lint
       id: luacheck
       shell: bash --noprofile --norc {0}
-      env:
-        matcher: ${{ env.PROBLEM_MATCHER }}
       run: |
         curl -sL --fail \
-          -o ${matcher} \
-          "${GITHUB_SERVER_URL}/${{ env.WORKFLOW_REPO }}/raw/main/${matcher}"
+          -o ${{ env.PROBLEM_MATCHER }} \
+          "${GITHUB_SERVER_URL}/${{ env.WORKFLOW_REPO }}/raw/${{ env.WORKFLOW_TAG }}/.github/${{ env.PROBLEM_MATCHER }}"
 
-        echo "::add-matcher::${matcher}"
-        luacheck *.rockspec ${{ steps.vars.outputs.paths }} \
+        echo "::add-matcher::${{ env.PROBLEM_MATCHER }}"
+        luacheck ${{ steps.vars.outputs.paths }} \
           --formatter plain \
           --codes --ranges
         exitcode=$?
@@ -253,7 +244,7 @@ jobs:
         echo "::remove-matcher owner=luacheck-plain_error::"
         echo "::remove-matcher owner=luacheck-plain_warning::"
 
-        rm -fv ${matcher}
+        rm -fv ${{ env.PROBLEM_MATCHER }}
 
         if [ "$exitcode" -gt 1 ]; then
           exit $exitcode
