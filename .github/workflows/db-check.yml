@@ -36,8 +36,9 @@ on:
 
 env:
   CSVLINT_PATH: ~/csvlint
-  PROBLEM_MATCHER: .github/csvlint.json
+  PROBLEM_MATCHER: csvlint.json
   WORKFLOW_REPO: Warhammer-Mods/workflows
+  WORKFLOW_REF: v1
 
 jobs:
 
@@ -212,7 +213,7 @@ jobs:
 
         curl -sL --fail \
           -o ${matcher} \
-          "${GITHUB_SERVER_URL}/${{ env.WORKFLOW_REPO }}/raw/main/${matcher}"
+          "${GITHUB_SERVER_URL}/${{ env.WORKFLOW_REPO }}/raw/${{ env.WORKFLOW_REF }}/.github/${matcher}"
 
         exit_code=0
 
