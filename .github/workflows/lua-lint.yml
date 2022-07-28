@@ -45,7 +45,7 @@ on:
 
 env:
   WORKFLOW_REPO: Warhammer-Mods/workflows
-  WORKFLOW_TAG: v1
+  WORKFLOW_REF: v1
   PROBLEM_MATCHER: luacheck-plain.json
 
 jobs:
@@ -195,7 +195,7 @@ jobs:
 
         curl -sL --fail \
           -o ${script} \
-          "${GITHUB_SERVER_URL}/${{ env.WORKFLOW_REPO }}/raw/${{ env.WORKFLOW_TAG }}/bin/${script}"
+          "${GITHUB_SERVER_URL}/${{ env.WORKFLOW_REPO }}/raw/${{ env.WORKFLOW_REF }}/bin/${script}"
 
         chmod +x ${script}
         ./${script}
@@ -233,7 +233,7 @@ jobs:
       run: |
         curl -sL --fail \
           -o ${{ env.PROBLEM_MATCHER }} \
-          "${GITHUB_SERVER_URL}/${{ env.WORKFLOW_REPO }}/raw/${{ env.WORKFLOW_TAG }}/.github/${{ env.PROBLEM_MATCHER }}"
+          "${GITHUB_SERVER_URL}/${{ env.WORKFLOW_REPO }}/raw/${{ env.WORKFLOW_REF }}/.github/${{ env.PROBLEM_MATCHER }}"
 
         echo "::add-matcher::${{ env.PROBLEM_MATCHER }}"
         luacheck ${{ steps.vars.outputs.paths }} \
