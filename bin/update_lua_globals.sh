@@ -1,10 +1,16 @@
 #!/usr/bin/env bash
+set -e
 
 # Paths are relative to project root
 
 CONFIG_FILE=${LUACHECK_CONFIG:-'.luacheckrc'}
 PATHS=${PATHS:-'script'}
 LUA_VENDOR_FILES=${VENDOR_PATH:-'.luarocks'}
+DEBUG_ENABLED=${DEBUG_ENABLED:-'false'}
+
+if [[ "$DEBUG_ENABLED" = 'true' ]]; then
+  set -x
+fi
 
 if [[ -z "${LUA_VERSION}" ]]; then
   LUA_VERSION=5.1

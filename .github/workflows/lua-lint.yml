@@ -3,6 +3,9 @@ name: Lua lint
 on: 
   workflow_call:
     inputs:
+      debug_enabled:
+        required: false
+        type: boolean
       paths:
         required: false
         type: string
@@ -190,6 +193,7 @@ jobs:
         CONFIG_FILE: ${{ steps.vars.outputs.config_file }}
         LUA_VERSION: ${{ steps.vars.outputs.lua_version }}
         CUSTOM_LUA_GLOBALS: ${{ inputs.custom_lua_globals }}
+        DEBUG_ENABLED: ${{ secrets.ACTIONS_STEP_DEBUG == 'true' || inputs.debug_enabled }}
       run: |
         script="update_lua_globals.sh"
         curl -sL \
