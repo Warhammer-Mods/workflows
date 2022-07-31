@@ -192,14 +192,9 @@ jobs:
         CUSTOM_LUA_GLOBALS: ${{ inputs.custom_lua_globals }}
       run: |
         script="update_lua_globals.sh"
-
-        curl -sL --fail \
-          -o ${script} \
-          "${GITHUB_SERVER_URL}/${{ env.WORKFLOW_REPO }}/raw/${{ env.WORKFLOW_REF }}/bin/${script}"
-
-        chmod +x ${script}
-        ./${script}
-        rm -f ${script}
+        curl -sL \
+          "${GITHUB_SERVER_URL}/${{ env.WORKFLOW_REPO }}/raw/${{ env.WORKFLOW_REF }}/bin/${script}" |
+        bash
 
     - name: Get file changes
       id: changes
