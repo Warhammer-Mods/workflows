@@ -166,7 +166,9 @@ jobs:
         repo="Clever/csvlint"
 
         response=$(
-          curl -sL "${GITHUB_API_URL}/repos/${repo}/releases/latest" \
+          curl -sL \
+            "${GITHUB_API_URL}/repos/${repo}/releases/latest" \
+            --retry 5 \
           | jq -rc
         )
 
@@ -192,10 +194,19 @@ jobs:
       if: steps.csvlint-cache.outputs.cache-hit != 'true'
       run: |
         mkdir -p ${{ env.CSVLINT_PATH }}
-        curl -sL ${{ steps.csvlint-info.outputs.download-url }} \
+        curl -sL --retry 5 ${{ steps.csvlint-info.outputs.download-url }} \
         | tar -xzvf - --strip-components=1 -C ${{ env.CSVLINT_PATH }}
         echo "${{ env.CSVLINT_PATH }}" >> ${GITHUB_PATH}
-    
+
+    - name: Install problem matcher
+      shell: bash
+      env:
+        matcher: ${{ env.PROBLEM_MATCHER }}
+      run: |
+        curl -sL --fail --retry 5 \
+          -o ${matcher} \
+          "${GITHUB_SERVER_URL}/${{ env.WORKFLOW_REPO }}/raw/${{ env.WORKFLOW_REF }}/.github/${matcher}"
+
     - name: Check TSV syntax
       id: check_syntax
       shell: bash --noprofile --norc {0}
@@ -210,10 +221,6 @@ jobs:
           return ${exit_code}
         }
         export -f checkTSV
-
-        curl -sL --fail \
-          -o ${matcher} \
-          "${GITHUB_SERVER_URL}/${{ env.WORKFLOW_REPO }}/raw/${{ env.WORKFLOW_REF }}/.github/${matcher}"
 
         exit_code=0
 

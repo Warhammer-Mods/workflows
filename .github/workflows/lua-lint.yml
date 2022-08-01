@@ -196,7 +196,7 @@ jobs:
         DEBUG_ENABLED: ${{ secrets.ACTIONS_STEP_DEBUG == 'true' || inputs.debug_enabled }}
       run: |
         script="update_lua_globals.sh"
-        curl -sL \
+        curl -sL --retry 5 \
           "${GITHUB_SERVER_URL}/${{ env.WORKFLOW_REPO }}/raw/${{ env.WORKFLOW_REF }}/bin/${script}" |
         bash
 
@@ -230,7 +230,7 @@ jobs:
       id: luacheck
       shell: bash --noprofile --norc {0}
       run: |
-        curl -sL --fail \
+        curl -sL --fail --retry 5 \
           -o ${{ env.PROBLEM_MATCHER }} \
           "${GITHUB_SERVER_URL}/${{ env.WORKFLOW_REPO }}/raw/${{ env.WORKFLOW_REF }}/.github/${{ env.PROBLEM_MATCHER }}"
 
