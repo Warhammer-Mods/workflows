@@ -13,7 +13,7 @@ if [[ "$DEBUG_ENABLED" = 'true' ]]; then
 fi
 
 if [[ -z "${LUA_VERSION}" ]]; then
-  LUA_VERSION=5.1
+  LUA_VERSION=5.4
 fi
 
 CUSTOM_VARS=()
