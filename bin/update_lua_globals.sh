@@ -56,7 +56,7 @@ eval set -- "$PARAMS"
 lua_globals=$(
   for f in $(
     find \
-      ${LUA_VENDOR_FILES}/share/lua \
+      "${LUA_VENDOR_FILES}/share/lua" \
       ${PATHS} \
       -type f -iname "*.lua" \
       -not -path "${LUA_VENDOR_FILES}/share/lua/*/luacheck/*"
