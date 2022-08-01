@@ -165,12 +165,14 @@ jobs:
         fi
 
     - uses: actions/cache@v3
+      id: cache
       if: steps.rockspec.outputs.is_present == 'true'
       with:
         path: ${{ steps.vars.outputs.vendor_path }}
         key: "${{ runner.os }}-luarocks_vendor_${{ hashFiles('**/*.rockspec') }}"
 
     - name: Install
+      if: steps.cache.outputs.cache-hit != 'true'
       run: |
         luarocks install --tree ${{ steps.vars.outputs.vendor_path }} lua-globals
 
