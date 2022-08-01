@@ -226,14 +226,17 @@ jobs:
           echo "::set-output name=clean::false"
         fi
 
-    - name: Luacheck Lint
-      id: luacheck
-      shell: bash --noprofile --norc {0}
+    - name: Install problem matcher
+      shell: bash
       run: |
         curl -sL --fail --retry 5 \
           -o ${{ env.PROBLEM_MATCHER }} \
           "${GITHUB_SERVER_URL}/${{ env.WORKFLOW_REPO }}/raw/${{ env.WORKFLOW_REF }}/.github/${{ env.PROBLEM_MATCHER }}"
 
+    - name: Luacheck Lint
+      id: luacheck
+      shell: bash --noprofile --norc {0}
+      run: |
         echo "::add-matcher::${{ env.PROBLEM_MATCHER }}"
         luacheck ${{ steps.vars.outputs.paths }} \
           --formatter plain \
