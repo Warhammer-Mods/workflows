@@ -58,7 +58,8 @@ lua_globals=$(
     find \
       ${LUA_VENDOR_FILES}/share/lua \
       ${PATHS} \
-      -type f -iname "*.lua" 
+      -type f -iname "*.lua" \
+      -not -path "${LUA_VENDOR_FILES}/share/lua/*/luacheck/*"
   ); do 
     lua-globals --mode W --lua-version ${LUA_VERSION} $f | 
     awk -F"\t" '$1 == "write" && $2 != "" {printf "	\"%s\",\n", $2}'
