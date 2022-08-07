@@ -314,6 +314,7 @@ jobs:
         labels: |
           automation
           lua
+          dep
 
     - name: Show info
       run: |
