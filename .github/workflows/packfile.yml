@@ -1,0 +1,141 @@
+name: Build Packfile
+
+on: 
+  workflow_call:
+    inputs:
+      paths:
+        required: false
+        type: string
+        default: |
+          *
+          !.git/**
+          !.vscode/**
+          !**/.*
+          !**/*.rockspec
+        description: |
+          A list of glob patterns to include in the packfile.
+      paths_separator:
+        required: false
+        type: string
+        default: "\n"
+        description: |
+          Separator used to split the paths input.
+      game:
+        required: true
+        type: string
+        default: warhammer_3
+        description: |
+          Game used for packfile building.
+          Can be one of the following:
+            arena
+            attila
+            empire
+            napoleon
+            rome_2
+            shogun_2
+            three_kingdoms
+            thrones_of_britannia
+            troy
+            warhammer
+            warhammer_2
+            warhammer_3
+      debug_enabled:
+        required: false
+        type: boolean
+        default: false
+        description: Enable debug logging
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    - name: Set values
+      id: values
+      env:
+        DEBUG_ENABLED: ${{ secrets.ACTIONS_STEP_DEBUG == 'true' || inputs.debug_enabled }}
+      run: |
+        [ "${DEBUG_ENABLED}" = 'true' ] && set -x
+
+        declare -A alias=(
+          [arena]=are
+          [attila]=att
+          [empire]=emp
+          [napoleon]=nap
+          [rome_2]=rom2
+          [shogun_2]=sho2
+          [three_kingdoms]=3k
+          [thrones_of_britannia]=tob
+          [troy]=troy
+          [warhammer]=wh
+          [warhammer_2]=wh2
+          [warhammer_3]=wh3
+        )
+
+        echo "::set-output name=schema_path::rpfm-schemas/schema_${alias[${{ inputs.game }}]}.ron"
+        echo "::set-output name=packfile::${{ github.event.repository.name }}.pack"
+    - name: Get file list
+      id: glob
+      uses: tj-actions/glob@v12
+      with:
+        files: ${{ inputs.paths }}
+        files-separator: ${{ inputs.paths_separator }}
+        separator: "\n"
+    - name: Generate options
+      id: opts
+      env:
+        DEBUG_ENABLED: ${{ secrets.ACTIONS_STEP_DEBUG == 'true' || inputs.debug_enabled }}
+      run: |
+        [ "${DEBUG_ENABLED}" = 'true' ] && set -x
+
+        declare -a args
+        while IFS= read -r path; do
+          args+=("-f '"${path}";"${path}"'")
+        done <<< '${{ steps.glob.outputs.paths }}'
+
+        echo "::set-output name=rpfm-add-paths::${args[@]}"
+    - name: Cache Schema
+      id: schema-cache
+      uses: actions/cache@v3
+      with:
+        key: schema-${{ inputs.game }}
+        path: ${{ steps.values.outputs.schema_path }}
+    - name: Checkout Schemas
+      if: steps.schema-cache.outputs.cache-hit != 'true'
+      uses: actions/checkout@v3
+      with:
+        repository: Frodo45127/rpfm-schemas
+        ref: master
+        path: rpfm-schemas
+    - name: Create packfile
+      uses: Warhammer-Mods/rpfm_cli-docker@master
+      with:
+        options: -v
+        game: ${{ inputs.game }}
+        subcommand: pack
+        run: >-
+          create
+          -p ${{ steps.values.outputs.packfile }}
+    - name: Populate packfile
+      uses: Warhammer-Mods/rpfm_cli-docker@master
+      with:
+        options: -v
+        game: ${{ inputs.game }}
+        subcommand: pack
+        run: >-
+          add ${{ steps.opts.outputs.rpfm-add-paths }}
+          -t ${{ steps.values.outputs.schema_path }}
+          -p ${{ steps.values.outputs.packfile }}
+    - name: Upload artifact
+      uses: actions/upload-artifact@v3
+      with:
+        name: ${{ github.event.repository.name }}
+        path: ${{ steps.values.outputs.packfile }}
+        retention-days: 90
+    - name: Upload artifact
+      uses: actions/upload-artifact@v3
+      with:
+        name: rpfm-cli log
+        path: rpfm*.log
+        retention-days: 90
+        if-no-files-found: ignore
