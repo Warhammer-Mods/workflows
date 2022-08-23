@@ -21,9 +21,6 @@ on:
       csvlint_params:
         required: false
         type: string
-      vscode_workspace_file:
-        required: false
-        type: string
       pr_enabled:
         required: false
         type: boolean
@@ -53,7 +50,6 @@ jobs:
       git_author_email: ${{ steps.vars.outputs.git_author_email }}
       git_committer_name: ${{ steps.vars.outputs.git_committer_name }}
       git_committer_email: ${{ steps.vars.outputs.git_committer_email }}
-      vscode_workspace_file: ${{ steps.vars.outputs.vscode_workspace_file }}
 
     steps:
 
@@ -114,13 +110,6 @@ jobs:
           echo "::set-output name=csvlint_params::${var}"
         else
           echo "::set-output name=csvlint_params::${{ inputs.csvlint_params }}"
-        fi
-
-        if [[ -z "${{ inputs.vscode_workspace_file }}" ]]; then
-          var=$(find . -type f -iname "*.code-workspace" -print | cut -d/ -f2- | head -n 1)
-          echo "::set-output name=vscode_workspace_file::${var}"
-        else
-          echo "::set-output name=vscode_workspace_file::${{ inputs.vscode_workspace_file }}"
         fi
 
     - name: Cache dos2unix
@@ -329,7 +318,7 @@ jobs:
           ---
 
           Keep getting these PRs?  
-          Make sure you open your project using [VSCode workspace file](../tree/master/${{ needs.db-check.outputs.vscode_workspace_file}}).
+          Make sure you open your project in [Visual Studio Code](https://code.visualstudio.com/).
           You can also check out this [article](https://docs.github.com/en/get-started/getting-started-with-git/configuring-git-to-handle-line-endings).
         labels: |
           automation
