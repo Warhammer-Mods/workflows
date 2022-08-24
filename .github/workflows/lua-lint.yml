@@ -59,6 +59,7 @@ on:
         required: true
 
 env:
+  GH_TOKEN: ${{ secrets.token }}
   PROBLEM_MATCHER: luacheck-plain.json
   WORKFLOW_REF: main
   WORKFLOW_REPO: Warhammer-Mods/workflows
@@ -163,11 +164,34 @@ jobs:
           echo "::set-output name=clean::false"
         fi
 
+    - name: Get workflow info
+      id: workflow-info
+      env:
+        DEBUG_ENABLED: ${{ secrets.ACTIONS_STEP_DEBUG == 'true' || inputs.debug_enabled }}
+      run: |
+        [ "${DEBUG_ENABLED}" = 'true' ] && set -x
+
+        gh_workflows_json=$(
+          gh api -H "Accept: application/vnd.github+json" \
+          /repos/${WORKFLOW_REPO}/commits/${WORKFLOW_REF}
+        )
+
+        echo "::set-output name=json::${gh_workflows_json}"
+
+    - name: Cache problem matcher
+      id: cache-matcher
+      uses: actions/cache@v3
+      with:
+        key: matcher-${{ env.PROBLEM_MATCHER }}-SHA${{ fromJSON(steps.workflow-info.outputs.json).sha }}
+        path: matchers/${{ env.PROBLEM_MATCHER }}
+
     - name: Install problem matcher
+      if: steps.cache-matcher.outputs.cache-hit != 'true'
       shell: bash
       run: |
+        mkdir -p matchers
         curl -sL --fail --retry 5 \
-          -o ${{ env.PROBLEM_MATCHER }} \
+          -o matchers/${{ env.PROBLEM_MATCHER }} \
           "${GITHUB_SERVER_URL}/${{ env.WORKFLOW_REPO }}/raw/${{ env.WORKFLOW_REF }}/matchers/${{ env.PROBLEM_MATCHER }}"
 
     - name: Luacheck Lint
@@ -175,6 +199,7 @@ jobs:
       shell: bash --noprofile --norc {0}
       run: |
         echo "::add-matcher::${{ env.PROBLEM_MATCHER }}"
+
         luacheck ${{ inputs.paths }} \
           --formatter plain \
           --codes --ranges
