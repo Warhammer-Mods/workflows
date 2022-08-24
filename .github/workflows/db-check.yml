@@ -194,7 +194,7 @@ jobs:
       run: |
         curl -sL --fail --retry 5 \
           -o ${matcher} \
-          "${GITHUB_SERVER_URL}/${{ env.WORKFLOW_REPO }}/raw/${{ env.WORKFLOW_REF }}/.github/${matcher}"
+          "${GITHUB_SERVER_URL}/${{ env.WORKFLOW_REPO }}/raw/${{ env.WORKFLOW_REF }}/matchers/${matcher}"
 
     - name: Check TSV syntax
       id: check_syntax
