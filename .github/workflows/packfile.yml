@@ -89,7 +89,7 @@ jobs:
 
         echo "::set-output name=schema_path::rpfm-schemas/schema_${alias[${{ inputs.game }}]}.ron"
         echo "::set-output name=packfile::${{ github.event.repository.name }}.pack"
-        echo "::set-output name=workflows_json::'"${gh_workflows_json}"'"
+        echo "::set-output name=workflows_json::${gh_workflows_json}"
     - name: Get file list
       id: glob
       uses: tj-actions/glob@v12
