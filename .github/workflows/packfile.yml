@@ -12,6 +12,7 @@ on:
           !.vscode/**
           !**/.*
           !**/*.rockspec
+          !matchers/*
         description: |
           A list of glob patterns to include in the packfile.
       paths_separator:
@@ -44,6 +45,15 @@ on:
         type: boolean
         default: false
         description: Enable debug logging
+    secrets:
+      token:
+        required: true
+
+env:
+  GH_TOKEN: ${{ secrets.token }}
+  PROBLEM_MATCHER: rpfm_cli.json
+  WORKFLOW_REF: main
+  WORKFLOW_REPO: Warhammer-Mods/workflows
 
 jobs:
   build:
@@ -56,6 +66,11 @@ jobs:
         DEBUG_ENABLED: ${{ secrets.ACTIONS_STEP_DEBUG == 'true' || inputs.debug_enabled }}
       run: |
         [ "${DEBUG_ENABLED}" = 'true' ] && set -x
+
+        gh_workflows_json=$(
+          gh api -H "Accept: application/vnd.github+json" \
+          /repos/${WORKFLOW_REPO}/commits/${WORKFLOW_REF}
+        )
 
         declare -A alias=(
           [arena]=are
@@ -74,6 +89,7 @@ jobs:
 
         echo "::set-output name=schema_path::rpfm-schemas/schema_${alias[${{ inputs.game }}]}.ron"
         echo "::set-output name=packfile::${{ github.event.repository.name }}.pack"
+        echo "::set-output name=workflows_json::'"${gh_workflows_json}"'"
     - name: Get file list
       id: glob
       uses: tj-actions/glob@v12
@@ -95,18 +111,33 @@ jobs:
 
         echo "::set-output name=rpfm-add-paths::${args[@]}"
     - name: Cache Schema
-      id: schema-cache
+      id: cache-schema
       uses: actions/cache@v3
       with:
         key: schema-${{ inputs.game }}
         path: ${{ steps.values.outputs.schema_path }}
     - name: Checkout Schemas
-      if: steps.schema-cache.outputs.cache-hit != 'true'
+      if: steps.cache-schema.outputs.cache-hit != 'true'
       uses: actions/checkout@v3
       with:
         repository: Frodo45127/rpfm-schemas
         ref: master
         path: rpfm-schemas
+    - name: Cache problem matcher
+      id: cache-matcher
+      uses: actions/cache@v3
+      with:
+        key: matcher-${{ env.PROBLEM_MATCHER }}-SHA${{ fromJSON(steps.values.outputs.workflows_json).sha }}
+        path: matchers/${{ env.PROBLEM_MATCHER }}
+    - name: Download problem matcher
+      shell: bash
+      if: steps.cache-matcher.outputs.cache-hit != 'true'
+      run: |
+        mkdir -p matchers
+        curl -sL --fail --retry 5 \
+          -o matchers/${{ env.PROBLEM_MATCHER }} \
+          "${GITHUB_SERVER_URL}/${{ env.WORKFLOW_REPO }}/raw/${{ env.WORKFLOW_REF }}/matchers/${{ env.PROBLEM_MATCHER }}"
+    - run: echo "::add-matcher::matchers/${{ env.PROBLEM_MATCHER }}"
     - name: Create packfile
       uses: Warhammer-Mods/rpfm_cli-docker@master
       with:
@@ -126,6 +157,9 @@ jobs:
           add ${{ steps.opts.outputs.rpfm-add-paths }}
           -t ${{ steps.values.outputs.schema_path }}
           -p ${{ steps.values.outputs.packfile }}
+    - run: |
+        echo "::remove-matcher owner=rpfm_cli_warning::"
+        echo "::remove-matcher owner=rpfm_cli_error::"
     - name: Upload artifact
       uses: actions/upload-artifact@v3
       with:
