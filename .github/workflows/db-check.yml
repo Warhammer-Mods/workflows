@@ -6,36 +6,50 @@ on:
       paths:
         required: false
         type: string
+        default: db
       git_author_name:
         required: false
         type: string
+        default: github-actions[bot]
       git_author_email:
         required: false
         type: string
+        default: 41898282+github-actions[bot]@users.noreply.github.com
       git_committer_name:
         required: false
         type: string
+        default: github-actions[bot]
       git_committer_email:
         required: false
         type: string
+        default: 41898282+github-actions[bot]@users.noreply.github.com
       csvlint_params:
         required: false
         type: string
+        default: >-
+          --lazyquotes --delimiter='\\t'
       pr_enabled:
         required: false
         type: boolean
+        default: false
       automerge_enabled:
         required: false
         type: boolean
+        default: false
+      debug_enabled:
+        required: false
+        type: boolean
+        default: false
     secrets:
       token:
         required: true
 
 env:
   CSVLINT_PATH: ~/csvlint
+  GH_TOKEN: ${{ secrets.token }}
   PROBLEM_MATCHER: csvlint.json
-  WORKFLOW_REPO: Warhammer-Mods/workflows
   WORKFLOW_REF: v1
+  WORKFLOW_REPO: Warhammer-Mods/workflows
 
 jobs:
 
@@ -44,12 +58,6 @@ jobs:
     outputs:
       clean: ${{ steps.changes.outputs.clean }}
       changed_files: ${{ steps.changes.outputs.files }}
-      paths: ${{ steps.vars.outputs.paths }}
-      csvlint_params: ${{ steps.vars.outputs.csvlint_params }}
-      git_author_name: ${{ steps.vars.outputs.git_author_name }}
-      git_author_email: ${{ steps.vars.outputs.git_author_email }}
-      git_committer_name: ${{ steps.vars.outputs.git_committer_name }}
-      git_committer_email: ${{ steps.vars.outputs.git_committer_email }}
 
     steps:
 
@@ -60,57 +68,6 @@ jobs:
       shell: bash
       run: |
         echo "CSVLINT_PATH=${CSVLINT_PATH/#\~/$HOME}" >> $GITHUB_ENV # expand tilde
-
-        # set defaults for missing variables
-        if [[ -z "${{ inputs.paths }}" ]]; then
-          var='db'
-          echo "::set-output name=paths::${var}"
-        else
-          echo "::set-output name=paths::${{ inputs.paths }}"
-        fi
-
-        if [[ -z "${{ inputs.git_author_name }}" ]]; then
-          var='github-actions[bot]'
-          echo "::set-output name=git_author_name::${var}"
-        else
-          echo "::set-output name=git_author_name::${{ inputs.git_author_name }}"
-        fi
-
-        if [[ -z "${{ inputs.git_author_email }}" ]]; then
-          var='41898282+github-actions[bot]@users.noreply.github.com'
-          echo "::set-output name=git_author_email::${var}"
-        else
-          echo "::set-output name=git_author_email::${{ inputs.git_author_email }}"
-        fi
-
-        if [[ -z "${{ inputs.git_committer_name }}" ]]; then
-          if [[ -z "${{ inputs.git_author_name }}" ]]; then
-            var='github-actions[bot]'
-            echo "::set-output name=git_committer_name::${var}"
-          else
-            echo "::set-output name=git_committer_name::${{ inputs.git_author_name }}"
-          fi
-        else
-          echo "::set-output name=git_committer_name::${{ inputs.git_committer_name }}"
-        fi
-
-        if [[ -z "${{ inputs.git_committer_email }}" ]]; then
-          if [[ -z "${{ inputs.git_author_email }}" ]]; then
-            var='41898282+github-actions[bot]@users.noreply.github.com'
-            echo "::set-output name=git_committer_email::${var}"
-          else
-            echo "::set-output name=git_committer_email::${{ inputs.git_author_email }}"
-          fi
-        else
-          echo "::set-output name=git_committer_email::${{ inputs.git_committer_email }}"
-        fi
-
-        if [[ -z "${{ inputs.csvlint_params }}" ]]; then
-          var="--lazyquotes --delimiter='\\t'"
-          echo "::set-output name=csvlint_params::${var}"
-        else
-          echo "::set-output name=csvlint_params::${{ inputs.csvlint_params }}"
-        fi
 
     - name: Cache dos2unix
       id: cache-dos2unix
@@ -141,7 +98,7 @@ jobs:
 
     - name: Normalize LF/CRLF
       run: |
-        for f in "${{ steps.vars.outputs.paths }}"; do
+        for f in '${{ inputs.paths }}'; do
           if [[ -d ${f} ]]; then # check if supplied path is directory
             find ${f} -type f -iname "*.tsv" -exec dos2unix {} \;
           elif [[ -f ${f} ]]; then
@@ -152,13 +109,9 @@ jobs:
     - name: Set csvlint info
       id: csvlint-info
       run: |
-        repo="Clever/csvlint"
-
         response=$(
-          curl -sL \
-            "${GITHUB_API_URL}/repos/${repo}/releases/latest" \
-            --retry 5 \
-          | jq -rc
+          gh api -H "Accept: application/vnd.github+json" \
+          /repos/Clever/csvlint/releases/latest"
         )
 
         version="$(jq -r '.name' <<< ${response})"
@@ -175,9 +128,6 @@ jobs:
         key: "${{ runner.os }}-csvlint@${{ steps.csvlint-info.outputs.latest-version }}"
         path: ${{ env.CSVLINT_PATH }}
 
-    - if: steps.csvlint-cache.outputs.cache-hit == 'true'
-      run: echo "${{ env.CSVLINT_PATH }}" >> ${GITHUB_PATH}
-
     - name: Install csvlint
       id: csvlint-install
       if: steps.csvlint-cache.outputs.cache-hit != 'true'
@@ -185,16 +135,38 @@ jobs:
         mkdir -p ${{ env.CSVLINT_PATH }}
         curl -sL --retry 5 ${{ steps.csvlint-info.outputs.download-url }} \
         | tar -xzvf - --strip-components=1 -C ${{ env.CSVLINT_PATH }}
-        echo "${{ env.CSVLINT_PATH }}" >> ${GITHUB_PATH}
+
+    - run: echo "${{ env.CSVLINT_PATH }}" >> ${GITHUB_PATH}
+
+    - name: Get workflow info
+      id: workflow-info
+      env:
+        DEBUG_ENABLED: ${{ secrets.ACTIONS_STEP_DEBUG == 'true' || inputs.debug_enabled }}
+      run: |
+        [ "${DEBUG_ENABLED}" = 'true' ] && set -x
+
+        gh_workflows_json=$(
+          gh api -H "Accept: application/vnd.github+json" \
+          /repos/${WORKFLOW_REPO}/commits/${WORKFLOW_REF}
+        )
+
+        echo "::set-output name=json::${gh_workflows_json}"
+
+    - name: Cache problem matcher
+      id: cache-matcher
+      uses: actions/cache@v3
+      with:
+        key: matcher-${{ env.PROBLEM_MATCHER }}-SHA${{ fromJSON(steps.workflow-info.outputs.json).sha }}
+        path: matchers/${{ env.PROBLEM_MATCHER }}
 
     - name: Install problem matcher
+      if: steps.cache-matcher.outputs.cache-hit != 'true'
       shell: bash
-      env:
-        matcher: ${{ env.PROBLEM_MATCHER }}
       run: |
+        mkdir -p matchers
         curl -sL --fail --retry 5 \
-          -o ${matcher} \
-          "${GITHUB_SERVER_URL}/${{ env.WORKFLOW_REPO }}/raw/${{ env.WORKFLOW_REF }}/matchers/${matcher}"
+          -o matchers/${{ env.PROBLEM_MATCHER }} \
+          "${GITHUB_SERVER_URL}/${{ env.WORKFLOW_REPO }}/raw/${{ env.WORKFLOW_REF }}/matchers/${{ env.PROBLEM_MATCHER }}"
 
     - name: Check TSV syntax
       id: check_syntax
@@ -204,7 +176,7 @@ jobs:
       run: |
         checkTSV () {
           echo "File: $@"
-          csvlint ${{ steps.vars.outputs.csvlint_params }} "$@"
+          csvlint ${{ inputs.csvlint_params }} "$@"
           exit_code=$?
           echo "::debug::Check finished with exit code: ${exit_code}"
           return ${exit_code}
@@ -214,7 +186,7 @@ jobs:
         exit_code=0
 
         echo "::add-matcher::${matcher}"
-        for path in "${{ steps.vars.outputs.paths }}"; do
+        for path in '${{ inputs.paths }}'; do
           if [[ -d ${path} ]]; then
             find ${path} -type f -iname "*.tsv" -print0 | xargs -0 -I {} bash -c 'checkTSV "$@"' _ {}
             last_exit_code=$?
@@ -240,7 +212,7 @@ jobs:
           --modified \
           --others \
           --exclude-standard \
-          ${{ steps.vars.outputs.paths }}
+          ${{ inputs.paths }}
         )
         echo "::debug::${changes}"
 
