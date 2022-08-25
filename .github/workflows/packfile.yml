@@ -119,17 +119,36 @@ jobs:
       run: |
         [ "${DEBUG_ENABLED}" = 'true' ] && set -x
 
-        rpfm-schemas_json=$(
-          gh api -H "Accept: application/vnd.github+json" \
-          /repos/${{ env.SCHEMA_REPO }}/commits/${{ env.SCHEMA_REF }}
+        last_commit_sha=$(
+          gh api graphql \
+            --jq '.. | .oid? | strings' \
+            -F owner="${SCHEMA_REPO%%/*}" -F name="${SCHEMA_REPO##*/}" -F ref="${SCHEMA_REPO}" \
+            -f query='
+            query($name: String! $owner: String!, $ref: String!) {
+              repository(name: $name, owner: $owner, followRenames: true) {
+                ref(qualifiedName: $ref) {
+                  target {
+                    ... on Commit {
+                      history(first: 1) {
+                        edges {
+                          node {
+                            oid
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }'
         )
 
-        echo "::set-output name=json::${rpfm-schemas_json}"
+        echo "::set-output name=last_commit_sha::${last_commit_sha}"
     - name: Cache Schema
       id: cache-schema
       uses: actions/cache@v3
       with:
-        key: schema-${{ inputs.game }}-SHA${{ fromJSON(steps.schema-info.outputs.json).sha }}
+        key: schema-${{ inputs.game }}-SHA${{ steps.schema-info.outputs.last_commit_sha }}
         path: ${{ steps.values.outputs.schema_path }}
     - name: Checkout Schemas
       if: steps.cache-schema.outputs.cache-hit != 'true'
