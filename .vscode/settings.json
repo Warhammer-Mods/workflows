@@ -1,0 +1,9 @@
+{
+  "keep-a-changelog.defaultAuthor": "Warhammer-Mods",
+  "keep-a-changelog.defaultRepository": "workflows",
+  "markdownlint.config": {
+    "MD024": {
+      "siblings_only": true
+    }
+  }
+}
