@@ -54,7 +54,7 @@ env:
   PROBLEM_MATCHER: rpfm_cli.json
   SCHEMA_REF: master
   SCHEMA_REPO: Frodo45127/rpfm-schemas
-  WORKFLOW_REF: main
+  WORKFLOW_REF: v2
   WORKFLOW_REPO: Warhammer-Mods/workflows
 
 jobs:

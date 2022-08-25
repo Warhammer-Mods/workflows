@@ -61,7 +61,7 @@ on:
 env:
   GH_TOKEN: ${{ secrets.token }}
   PROBLEM_MATCHER: luacheck-plain.json
-  WORKFLOW_REF: main
+  WORKFLOW_REF: v2
   WORKFLOW_REPO: Warhammer-Mods/workflows
 
 jobs:
