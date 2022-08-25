@@ -52,6 +52,8 @@ on:
 env:
   GH_TOKEN: ${{ secrets.token }}
   PROBLEM_MATCHER: rpfm_cli.json
+  SCHEMA_REF: master
+  SCHEMA_REPO: Frodo45127/rpfm-schemas
   WORKFLOW_REF: main
   WORKFLOW_REPO: Warhammer-Mods/workflows
 
@@ -110,18 +112,31 @@ jobs:
         done <<< '${{ steps.glob.outputs.paths }}'
 
         echo "::set-output name=rpfm-add-paths::${args[@]}"
+    - name: Schema info
+      id: schema-info
+      env:
+        DEBUG_ENABLED: ${{ secrets.ACTIONS_STEP_DEBUG == 'true' || inputs.debug_enabled }}
+      run: |
+        [ "${DEBUG_ENABLED}" = 'true' ] && set -x
+
+        rpfm-schemas_json=$(
+          gh api -H "Accept: application/vnd.github+json" \
+          /repos/${{ env.SCHEMA_REPO }}/commits/${{ env.SCHEMA_REF }}
+        )
+
+        echo "::set-output name=json::${rpfm-schemas_json}"
     - name: Cache Schema
       id: cache-schema
       uses: actions/cache@v3
       with:
-        key: schema-${{ inputs.game }}
+        key: schema-${{ inputs.game }}-SHA${{ fromJSON(steps.schema-info.outputs.json).sha }}
         path: ${{ steps.values.outputs.schema_path }}
     - name: Checkout Schemas
       if: steps.cache-schema.outputs.cache-hit != 'true'
       uses: actions/checkout@v3
       with:
-        repository: Frodo45127/rpfm-schemas
-        ref: master
+        repository: ${{ env.SCHEMA_REPO }}
+        ref: ${{ env.SCHEMA_REF }}
         path: rpfm-schemas
     - name: Cache problem matcher
       id: cache-matcher
