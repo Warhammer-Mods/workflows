@@ -120,27 +120,9 @@ jobs:
         [ "${DEBUG_ENABLED}" = 'true' ] && set -x
 
         last_commit_sha=$(
-          gh api graphql \
-            --jq '.. | .oid? | strings' \
-            -F owner="${SCHEMA_REPO%%/*}" -F name="${SCHEMA_REPO##*/}" -F ref="${SCHEMA_REPO}" \
-            -f query='
-            query($name: String! $owner: String!, $ref: String!) {
-              repository(name: $name, owner: $owner, followRenames: true) {
-                ref(qualifiedName: $ref) {
-                  target {
-                    ... on Commit {
-                      history(first: 1) {
-                        edges {
-                          node {
-                            oid
-                          }
-                        }
-                      }
-                    }
-                  }
-                }
-              }
-            }'
+          gh api \
+            /repos/${{ env.SCHEMA_REPO }}/commits/${{ env.SCHEMA_REF }} \
+            --jq '.sha'
         )
 
         echo "::set-output name=last_commit_sha::${last_commit_sha}"
