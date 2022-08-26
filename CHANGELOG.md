@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning].
 
 ## [Unreleased]
 
+## [2.0.1] - 2022-08-26
+
+Maintenance release.
+
 ## [2.0.0] - 2022-08-26
 
 ### Added
@@ -124,7 +128,8 @@ Initial release.
 [semantic versioning]: https://semver.org/spec/v2.0.0.html
 
 <!-- Versions -->
-[Unreleased]: https://github.com/Warhammer-Mods/workflows/compare/v2.0.0..HEAD
+[Unreleased]: https://github.com/Warhammer-Mods/workflows/compare/v2.0.1..HEAD
+[2.0.1]: https://github.com/Warhammer-Mods/workflows/compare/v2.0.0..v2.0.1
 [2.0.0]: https://github.com/Warhammer-Mods/workflows/compare/v1.0.11..v2.0.0
 [1.0.11]: https://github.com/Warhammer-Mods/workflows/compare/v1.0.10..v1.0.11
 [1.0.10]: https://github.com/Warhammer-Mods/workflows/compare/v1.0.9..v1.0.10
