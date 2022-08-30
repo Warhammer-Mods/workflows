@@ -96,8 +96,9 @@ jobs:
       id: glob
       uses: tj-actions/glob@v13
       with:
-        files: ${{ inputs.paths }}
         files-separator: ${{ inputs.paths_separator }}
+        files: ${{ inputs.paths }}
+        match-directories: false
         separator: "\n"
     - name: Generate options
       id: opts
