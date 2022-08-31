@@ -69,9 +69,10 @@ jobs:
       run: |
         [ "${DEBUG_ENABLED}" = 'true' ] && set -x
 
-        gh_workflows_json=$(
+        workflows_last_commit_sha=$(
           gh api -H "Accept: application/vnd.github+json" \
-          /repos/${WORKFLOW_REPO}/commits/${WORKFLOW_REF}
+          /repos/${WORKFLOW_REPO}/commits/${WORKFLOW_REF} \
+          --jq '.sha'
         )
 
         declare -A alias=(
@@ -91,7 +92,7 @@ jobs:
 
         echo "::set-output name=schema_path::rpfm-schemas/schema_${alias[${{ inputs.game }}]}.ron"
         echo "::set-output name=packfile::${{ github.event.repository.name }}.pack"
-        echo "::set-output name=workflows_json::${gh_workflows_json}"
+        echo "::set-output name=workflows_last_commit_sha::${workflows_last_commit_sha}"
     - name: Get file list
       id: glob
       uses: tj-actions/glob@v13
@@ -144,7 +145,7 @@ jobs:
       id: cache-matcher
       uses: actions/cache@v3
       with:
-        key: matcher-${{ env.PROBLEM_MATCHER }}-SHA${{ fromJSON(steps.values.outputs.workflows_json).sha }}
+        key: matcher-${{ env.PROBLEM_MATCHER }}-SHA${{ steps.values.outputs.workflows_last_commit_sha }}
         path: matchers/${{ env.PROBLEM_MATCHER }}
     - name: Download problem matcher
       shell: bash

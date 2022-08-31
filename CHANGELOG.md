@@ -12,6 +12,8 @@ and this project adheres to [Semantic Versioning].
 - Do not replace `;` with `:` in Luarocks ENVs
   - Particularly, in `LUA_PATH` and `LUA_CPATH`
   - These variables are platform-independent, UNIX-style `:` PATH delimiter is not required.
+- Fix possible `jobs.build.steps.values.outputsgh_workflows_json` overflow
+  - As per [GitHub Docs](https://docs.github.com/en/actions/using-jobs/defining-outputs-for-jobs), an output string cannot exceed 1 MB. GitHub REST API response can easily exceed that limit.
 
 ## [2.0.2] - 2022-08-30
 
