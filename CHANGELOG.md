@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning].
 
 ## [Unreleased]
 
+## [2.0.2] - 2022-08-30
+
+### Fixed
+
+- Folders being included in glob matches
+  - Folders are included by default in tj-actions/glob@v13
+
 ## [2.0.1] - 2022-08-26
 
 Maintenance release.
@@ -128,7 +135,8 @@ Initial release.
 [semantic versioning]: https://semver.org/spec/v2.0.0.html
 
 <!-- Versions -->
-[Unreleased]: https://github.com/Warhammer-Mods/workflows/compare/v2.0.1..HEAD
+[Unreleased]: https://github.com/Warhammer-Mods/workflows/compare/v2.0.2..HEAD
+[2.0.2]: https://github.com/Warhammer-Mods/workflows/compare/v2.0.1..v2.0.2
 [2.0.1]: https://github.com/Warhammer-Mods/workflows/compare/v2.0.0..v2.0.1
 [2.0.0]: https://github.com/Warhammer-Mods/workflows/compare/v1.0.11..v2.0.0
 [1.0.11]: https://github.com/Warhammer-Mods/workflows/compare/v1.0.10..v1.0.11
