@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning].
 
 ## [Unreleased]
 
+### Fixed
+
+- Do not replace `;` with `:` in Luarocks ENVs
+  - Particularly, in `LUA_PATH` and `LUA_CPATH`
+  - These variables are platform-independent, UNIX-style `:` PATH delimiter is not required.
+
 ## [2.0.2] - 2022-08-30
 
 ### Fixed
