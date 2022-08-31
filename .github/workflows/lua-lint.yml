@@ -117,10 +117,10 @@ jobs:
         fi
 
         lr_path=$(luarocks path --tree ${{ inputs.vendor_path }} --lr-path )
-        echo "LUA_PATH=${lr_path/;/:}:${LUA_PATH}" >> $GITHUB_ENV
+        echo "LUA_PATH=${lr_path};${LUA_PATH}" >> $GITHUB_ENV
 
         lr_cpath=$(luarocks path --tree ${{ inputs.vendor_path }} --lr-cpath)
-        echo "LUA_CPATH=${lr_cpath/;/:}:${LUA_CPATH}" >> $GITHUB_ENV
+        echo "LUA_CPATH=${lr_cpath};${LUA_CPATH}" >> $GITHUB_ENV
 
         lr_bin=$(luarocks path --tree ${{ inputs.vendor_path }} --lr-bin)
         echo "${lr_bin/;/:}" >> $GITHUB_PATH
