@@ -72,6 +72,11 @@ jobs:
       files: ${{ steps.changes.outputs.files }}
 
     steps:
+    - name: Set variables
+      id: vars
+      run: |
+        echo "delimiter=EOF${RANDOM}" >> $GITHUB_ENV
+
     - uses: actions/checkout@v3
 
     - uses: leafo/gh-actions-lua@v9.1.0
@@ -95,10 +100,10 @@ jobs:
         )
 
         if [[ -s "${rockspec}" ]]; then
-          echo "::set-output name=file_path::${rockspec}"
-          echo "::set-output name=is_present::true"
+          echo "file_path=${rockspec}" >> $GITHUB_OUTPUT
+          echo 'is_present=true' >> $GITHUB_OUTPUT
         else
-          echo "::set-output name=is_present::false"
+          echo 'is_present=false' >> $GITHUB_OUTPUT
         fi
 
     - uses: actions/cache@v3
@@ -150,18 +155,19 @@ jobs:
         echo "::debug::${changes}"
 
         if [ -z "${changes}" ]; then
-          echo "::set-output name=clean::true"
+          echo 'clean=true' >> $GITHUB_OUTPUT
         else
           files=()
           echo "::group::Files changed"
+          echo 'files=<<${{ env.delimiter }}'
           while IFS= read -r line; do
-            files+=("${line}")
+            echo "${line}" >> $GITHUB_OUTPUT
             echo "::notice file=${file}::File changed: ${line}"
             echo "::debug::$(git diff ${file})"
           done <<< ${changes}
+          echo '${{ env.delimiter }}' >> $GITHUB_OUTPUT
           echo "::endgroup::"
-          echo "::set-output name=files::${files[@]}"
-          echo "::set-output name=clean::false"
+          echo 'clean=false' >> $GITHUB_OUTPUT
         fi
 
     - name: Get workflow info
@@ -173,16 +179,17 @@ jobs:
 
         gh_workflows_json=$(
           gh api -H "Accept: application/vnd.github+json" \
-          /repos/${WORKFLOW_REPO}/commits/${WORKFLOW_REF}
+            /repos/${WORKFLOW_REPO}/commits/${WORKFLOW_REF} \
+            --jq '.sha'
         )
 
-        echo "::set-output name=json::${gh_workflows_json}"
+        echo "sha=${gh_workflows_json}" >> $GITHUB_OUTPUT
 
     - name: Cache problem matcher
       id: cache-matcher
       uses: actions/cache@v3
       with:
-        key: matcher-${{ env.PROBLEM_MATCHER }}-SHA${{ fromJSON(steps.workflow-info.outputs.json).sha }}
+        key: matcher-${{ env.PROBLEM_MATCHER }}-SHA${{ steps.workflow-info.outputs.sha }}
         path: matchers/${{ env.PROBLEM_MATCHER }}
 
     - name: Install problem matcher

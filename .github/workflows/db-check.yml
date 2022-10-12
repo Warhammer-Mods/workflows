@@ -68,6 +68,7 @@ jobs:
       shell: bash
       run: |
         echo "CSVLINT_PATH=${CSVLINT_PATH/#\~/$HOME}" >> $GITHUB_ENV # expand tilde
+        echo "delimiter=EOF${RANDOM}" >> $GITHUB_ENV
 
     - name: Cache dos2unix
       id: cache-dos2unix
@@ -117,9 +118,9 @@ jobs:
         version="$(jq -r '.name' <<< ${response})"
         download_url="$(jq -r '.assets[].browser_download_url' <<< ${response} | grep -i "$(uname -s)")"
 
-        echo "::set-output name=json::${response}"
-        echo "::set-output name=latest-version::${version}"
-        echo "::set-output name=download-url::${download_url}"
+        echo "json=${response}" >> $GITHUB_OUTPUT
+        echo "latest-version=${version}" >> $GITHUB_OUTPUT
+        echo "download-url=${download_url}" >> $GITHUB_OUTPUT
 
     - name: Cache cvslint
       id: csvlint-cache
@@ -145,18 +146,19 @@ jobs:
       run: |
         [ "${DEBUG_ENABLED}" = 'true' ] && set -x
 
-        gh_workflows_json=$(
+        sha=$(
           gh api -H "Accept: application/vnd.github+json" \
-          /repos/${WORKFLOW_REPO}/commits/${WORKFLOW_REF}
+          /repos/${WORKFLOW_REPO}/commits/${WORKFLOW_REF} \
+          --jq '.sha'
         )
 
-        echo "::set-output name=json::${gh_workflows_json}"
+        echo "sha=${sha}" >> $GITHUB_OUTPUT
 
     - name: Cache problem matcher
       id: cache-matcher
       uses: actions/cache@v3
       with:
-        key: matcher-${{ env.PROBLEM_MATCHER }}-SHA${{ fromJSON(steps.workflow-info.outputs.json).sha }}
+        key: matcher-${{ env.PROBLEM_MATCHER }}-SHA${{ steps.workflow-info.outputs.sha }}
         path: matchers/${{ env.PROBLEM_MATCHER }}
 
     - name: Install problem matcher
@@ -217,18 +219,18 @@ jobs:
         echo "::debug::${changes}"
 
         if [ -z "${changes}" ]; then
-          echo "::set-output name=clean::true"
+          echo 'clean=true' >> $GITHUB_OUTPUT
         else
-          files=()
-          echo "::group::Files changed"
+          echo '::group::Files changed'
+          echo 'files=<<${{ env.delimiter }}' >> $GITHUB_OUTPUT
           while IFS= read -r line; do
-            files+=("${line}")
+            echo "${line}" >> $GITHUB_OUTPUT
             echo "::notice file=${file}::File changed: ${line}"
             echo "::debug::$(git diff ${file})"
           done <<< ${changes}
-          echo "::endgroup::"
-          echo "::set-output name=files::${files[@]}"
-          echo "::set-output name=clean::false"
+          echo '${{ env.delimiter }}' >> $GITHUB_OUTPUT
+          echo 'clean=false' >> $GITHUB_OUTPUT
+          echo '::endgroup::'
         fi
 
     - name: Upload DBs

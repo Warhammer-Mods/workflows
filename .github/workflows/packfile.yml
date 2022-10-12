@@ -50,6 +50,7 @@ on:
         required: true
 
 env:
+  DEBUG_ENABLED: ${{ secrets.ACTIONS_STEP_DEBUG == 'true' || inputs.debug_enabled }}
   GH_TOKEN: ${{ secrets.token }}
   PROBLEM_MATCHER: rpfm_cli.json
   SCHEMA_REF: master
@@ -64,8 +65,6 @@ jobs:
     - uses: actions/checkout@v3
     - name: Set values
       id: values
-      env:
-        DEBUG_ENABLED: ${{ secrets.ACTIONS_STEP_DEBUG == 'true' || inputs.debug_enabled }}
       run: |
         [ "${DEBUG_ENABLED}" = 'true' ] && set -x
 
@@ -90,9 +89,9 @@ jobs:
           [warhammer_3]=wh3
         )
 
-        echo "::set-output name=schema_path::rpfm-schemas/schema_${alias[${{ inputs.game }}]}.ron"
-        echo "::set-output name=packfile::${{ github.event.repository.name }}.pack"
-        echo "::set-output name=workflows_last_commit_sha::${workflows_last_commit_sha}"
+        echo "schema_path=rpfm-schemas/schema_${alias[${{ inputs.game }}]}.ron" >> $GITHUB_OUTPUT
+        echo "packfile=${{ github.event.repository.name }}.pack" >> $GITHUB_OUTPUT
+        echo "workflows_last_commit_sha=${workflows_last_commit_sha}" >> $GITHUB_OUTPUT
     - name: Get file list
       id: glob
       uses: tj-actions/glob@v15
@@ -103,8 +102,6 @@ jobs:
         separator: "\n"
     - name: Generate options
       id: opts
-      env:
-        DEBUG_ENABLED: ${{ secrets.ACTIONS_STEP_DEBUG == 'true' || inputs.debug_enabled }}
       run: |
         [ "${DEBUG_ENABLED}" = 'true' ] && set -x
 
@@ -113,11 +110,9 @@ jobs:
           args+=("-f '"${path}";"${path}"'")
         done <<< '${{ steps.glob.outputs.paths }}'
 
-        echo "::set-output name=rpfm-add-paths::${args[@]}"
+        echo "rpfm-add-paths=${args[@]}" >> $GITHUB_OUTPUT
     - name: Schema info
       id: schema-info
-      env:
-        DEBUG_ENABLED: ${{ secrets.ACTIONS_STEP_DEBUG == 'true' || inputs.debug_enabled }}
       run: |
         [ "${DEBUG_ENABLED}" = 'true' ] && set -x
 
@@ -127,7 +122,7 @@ jobs:
             --jq '.sha'
         )
 
-        echo "::set-output name=last_commit_sha::${last_commit_sha}"
+        echo "last_commit_sha=${last_commit_sha}" >> $GITHUB_OUTPUT
     - name: Cache Schema
       id: cache-schema
       uses: actions/cache@v3
