@@ -95,7 +95,7 @@ jobs:
         echo "::set-output name=workflows_last_commit_sha::${workflows_last_commit_sha}"
     - name: Get file list
       id: glob
-      uses: tj-actions/glob@v13
+      uses: tj-actions/glob@v15
       with:
         files-separator: ${{ inputs.paths_separator }}
         files: ${{ inputs.paths }}
