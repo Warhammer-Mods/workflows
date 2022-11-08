@@ -94,7 +94,7 @@ jobs:
         echo "workflows_last_commit_sha=${workflows_last_commit_sha}" >> $GITHUB_OUTPUT
     - name: Get file list
       id: glob
-      uses: tj-actions/glob@v15
+      uses: tj-actions/glob@v16
       with:
         files-separator: ${{ inputs.paths_separator }}
         files: ${{ inputs.paths }}
