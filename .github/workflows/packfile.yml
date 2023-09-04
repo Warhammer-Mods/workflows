@@ -61,7 +61,7 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     - name: Set values
       id: values
       env:
@@ -135,7 +135,7 @@ jobs:
         path: ${{ steps.values.outputs.schema_path }}
     - name: Checkout Schemas
       if: steps.cache-schema.outputs.cache-hit != 'true'
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
       with:
         repository: ${{ env.SCHEMA_REPO }}
         ref: ${{ env.SCHEMA_REF }}
