@@ -77,7 +77,7 @@ jobs:
       run: |
         echo "delimiter=EOF${RANDOM}" >> $GITHUB_ENV
 
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
 
     - uses: leafo/gh-actions-lua@v9.1.0
       with:
@@ -237,7 +237,7 @@ jobs:
 
     steps:
 
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
       with:
         persist-credentials: false
         fetch-depth: 0
